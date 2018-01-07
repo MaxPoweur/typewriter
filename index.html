@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title>I am Jack. A tribute to Jack Kerouac.</title>
+    <link rel="shortcut icon" type="image/x-icon" href="files/favicon.ico" />
+    <link rel="stylesheet" href="files/style.css" />
+    <script src="files/jquery-3.1.1.min.js"></script>
+</head>
+
+<body>
+    <div id="page">
+        <img id="imagePage"/>
+        <img id="fadeout"/>
+        <div id="jack">
+            <div id="text"></div>
+            <div id="content"></div>
+        </div>
+        <img id="signal"/>
+    </div>
+    <!-- <textarea></textarea> -->
+
+    <script type="text/javascript">
+        window.onload = function() {
+
+            <!-- DEBUT RÉGLAGES -->
+
+            // Réglages pour le texte
+            var fontFamily = "'Special Elite', cursive";
+            var fontSize = "12"; // En pixels
+            var fontColor = "black"; // Peut être en hexadecimal
+            var letterSpacing = "0.5"; // En pixels
+            var lineHeight = "15"; // En pixels
+            $("#text, #jack").css("font-family", fontFamily);
+            $("#text, #jack").css("font-size", fontSize+"px");
+            $("#text, #jack").css("color", fontColor);
+            $("#text, #jack").css("letter-spacing", letterSpacing+"px");
+            $("#text, #jack").css("line-height", lineHeight+"px");
+
+            // Réglages pour les couleurs de fond & de page
+            var couleurDeFond = "black"; // Couleur de fond, peut être en hexadeximal
+            $("html, body").css("background-color", couleurDeFond);
+
+            var couleurDePage = "white"; // Couleur de page, peut être en hexadeximal
+            $("#page").css("background-color", couleurDePage);
+            var imagePage = ""; // Image de la page, laissé vide si l'on utilise qu'une couleur
+            if(imagePage!="")
+                $("#imagePage").attr("src", imagePage);
+
+
+            // Réglages pour la taille et le positionnement de la page
+            var largeurPage=0; // Taille de la page en pixels; laisser à 0 pour calculer automatiquement la largeur en fonction de la hauteur de la fenêtre
+            if(largeurPage==0)
+                $("#page").css("width", (595*$(window).height())/842+"px"); // Calcul automatique de la taille de la page pour respecter le format A4 ; en pixels
+            else
+                $("#page").css("width", largeurPage+"px");
+            var currentHeight = $(window).height(); // Ne pas toucher
+
+            var margeDroite = ($(window).width()-$("#page").css("width").substr(0, $("#page").css("width").length-2))/4; // Marge de droite calculée automatiquement > marge de 25% de la largeur de l'écran
+            // var margeDroite = 100; // Si l'on désire régler nous même la marge, l'indiquer ici en pixels, décommenter cette ligne et commenter la ligne juste au dessus
+            $("#page").css("right", margeDroite+"px");
+
+
+            // Réglages pour le dégradé fadeout
+            var urlImageFadeOut = 'files/fadeout.png';
+            $('#fadeout').attr('src', urlImageFadeOut);
+
+            $("#fadeout").css("width", $("#page").css("width")); // La largeur du dégradé fading est celle de la page
+
+            var pourcentageHauteurFadeout = 25; // La hauteur du dégradé fading est de 25% de la hauteur de la page
+            $("#fadeout").css("height", $(window).height()/(100/pourcentageHauteurFadeout)+"px");
+
+
+            // Réglages pour l'apparence du warning
+            var urlImageWarning = 'files/warning.png';
+            var largeurImage = 30; // Largeur de l'image, en pixels
+            var hauteurImage = 30; // Hauteur de l'image, en pixels
+            $('#signal').attr('src', urlImageWarning);
+            $("#signal").css("width", largeurImage+"px");
+            $("#signal").css("height", hauteurImage+"px");
+
+            // Réglages pour la position du warning
+            var leftWarning=2.5, rightWarning=0; // Mettre à 0 le côté non utilisé. Valeur en % de la page
+            if(leftWarning==0)
+                $("#signal").css("right", rightWarning+"vh");
+            else
+                $("#signal").css("left", leftWarning+"vh");
+
+            var topWarning=0, bottomWarning=2.5; // Mettre à 0 le côté non utilisé. Valeur en % de la page
+            if(bottomWarning==0)
+                $("#signal").css("top", topWarning+"vh");
+            else
+                $("#signal").css("bottom", bottomWarning+"vh");
+
+            var vitesseDeplacementPage = 4; // en pixels
+
+            var surcouchageChar= ""; // Caractère de surcouchage en fin de ligne; laisser vite si surcouchage non utilisé
+            var endSpeedAnimate = 2000; // vitesse d'animation de déplacement du texte en cas de refresh de celui-ci; Plus la valeur est élevée, plus la vitesse de déplacement est lente
+
+            <!-- FIN RÉGLAGES -->
+
+
+            var IS_LOCAL_SERVER = true, // false
+                url = 'files/text.txt';
+
+            if (!IS_LOCAL_SERVER) {
+                url = 'files/text.txt';
+            }
+            var historic = "",
+                needEnter = false,
+                toShift = true,
+                ended = false,
+                currentLine = "",
+                needWait=false;
+
+            function IamJack(text) {
+                if (!text) {
+                    return false;
+                }
+                var val = '',
+                    splitText = text.split("\r").join("").split(''),
+                    words = text.split(/[\s]+/),
+                    elt = $("body"),
+                    newWord = words.shift();
+                elt.keyup(function(e) {
+                    if(!needWait)
+                    {
+                        if(currentHeight!=$(window).height())
+                        {
+                            currentHeight = $(window).height();
+                            $("#page").css("width", (595*$(window).height())/842+"px");
+                            $("#fadeout").css("width", $("#page").css("width")); // La largeur du dégradé fading est celle de la page
+                            $("#fadeout").css("height", $(window).height()/(100/pourcentageHauteurFadeout)+"px");
+                        }
+                        // console.log(splitText);
+                        historic += e.key;
+                        historic = historic.slice(-10);
+                        // console.log(historic);
+                        if(historic.slice(-10).toUpperCase()=="FULLSCREEN")
+                        {
+                            if (!document.fullscreenElement &&    // alternative standard method
+                              !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {  // current working methods
+                                if (document.documentElement.requestFullscreen) {
+                                  document.documentElement.requestFullscreen();
+                                } else if (document.documentElement.msRequestFullscreen) {
+                                  document.documentElement.msRequestFullscreen();
+                                } else if (document.documentElement.mozRequestFullScreen) {
+                                  document.documentElement.mozRequestFullScreen();
+                                } else if (document.documentElement.webkitRequestFullscreen) {
+                                  document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+                                }
+                                setTimeout(function() {
+                                    $("#page").css("width", (595*$(window).height())/842+"px");
+                                }, 500);
+
+                          }
+                          return;
+                        } else if(historic.slice(-4).toUpperCase()=="QUIT")
+                        {
+                          if (!(!document.fullscreenElement &&    // alternative standard method
+                            !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement )) {
+                               if (document.exitFullscreen) {
+                                 document.exitFullscreen();
+                               } else if (document.msExitFullscreen) {
+                                 document.msExitFullscreen();
+                               } else if (document.mozCancelFullScreen) {
+                                 document.mozCancelFullScreen();
+                               } else if (document.webkitExitFullscreen) {
+                                 document.webkitExitFullscreen();
+                               }
+                           }
+                           return;
+                       } else if(historic.slice(-7).toUpperCase()=="REFRESH")
+                        {
+                            ended = true;
+                            console.log("refreshed");
+                            needWait = true;
+                            $("#content").animate({
+                                bottom: '100%',
+                            }, endSpeedAnimate, function(){
+                                $("#text").empty();
+                                $("#content").empty();
+                                $("#content").fadeIn();
+                                $("#page").css("margin-right", "auto");
+                                historic = "";
+                                needEnter = false;
+                                toShift = true;
+                                ended = false;
+                                currentLine = "";
+                                val = '';
+                                splitText = text.split("\r").join("").split('');
+                                words = text.split(/[\s]+/);
+                                newWord = words.shift();
+                                $("#content").css("bottom", "10%");
+                                needWait = false;
+                            });
+                            return;
+                        }
+
+
+                        if (needEnter && e.key == "Enter") {
+                            console.log("good");
+                            if(surcouchageChar!="")
+                            {
+                                if(val.slice(-1)==surcouchageChar)
+                                {
+                                    val = val.substring(0, val.length-1)+lastChar;
+                                }
+                                else if(val.slice(-5)==surcouchageChar+"<br>")
+                                {
+                                    val = val.substring(0, val.length-5)+lastChar;
+                                }
+                            }
+
+                            $("#page").css("margin-right", "auto");
+                            if(toShift)
+                            {
+                                var newChar = splitText.shift();
+                                toShift=true;
+                                val +=  "<br>";
+                            }
+                            val+="&#8291;";
+                            var nextChar = splitText[0];
+                            if (nextChar.charCodeAt(0) != 10) {
+                                needEnter = false;
+                                document.getElementById("signal").style.visibility = "hidden";
+                            } else {
+                                val +=  "<br>&#8291;";
+                                splitText.shift();
+                                toShift = false;
+                                var press = jQuery.Event("keyup");
+                                press.key = "Enter";
+                                $("body").trigger(press);
+                            }
+                            $("#content").html(val);
+                            currentLine = "";
+                            $('#text').html("");
+
+                        } else if (needEnter && e.key != "Enter") {
+                            console.log("nop!");
+                            if(surcouchageChar!="")
+                            {
+                                if(val.slice(-1)!=surcouchageChar)
+                                {
+                                    if(val[val.length-1]==">")
+                                    {
+                                        lastChar = val.slice(-4);
+                                        val = val.substring(0, val.length-5)+surcouchageChar+"<br>";
+                                    }
+                                    else
+                                    {
+                                        lastChar = val.slice(-1);
+                                        val = val.substring(0, val.length-1)+surcouchageChar;
+                                    }
+                                }
+                            }
+                            $("#content").html(val);
+                        } else {
+                            switch (e.key) {
+                                case "Escape":
+                                    return;
+
+                                case "Shift":
+                                    break;
+
+                                case "Enter":
+                                    var newChar = splitText.shift();
+                                    var nextChar = splitText[0];
+                                    while (true && splitText.length>0) {
+                                        if(splitText.length>1)
+                                        {
+                                            if (nextChar == " " ||  nextChar.charCodeAt(0) == 10 && splitText[1].charCodeAt(0) != 10) // Fin de mot
+                                            {
+                                                if (!(nextChar.charCodeAt(0) == 10 && splitText[1].charCodeAt(0) == 10 || newChar == " " && nextChar == " "))
+                                                    newWord = words.shift();
+                                                if (nextChar == " ")
+                                                    var width = $('#text').html(currentLine + newChar + " ").width();
+                                                else
+                                                    var width = $('#text').html(currentLine + newChar + newWord).width();
+
+                                                //console.log(width + " > " + $('#jack').width());
+                                                if (width >= $('#jack').width()-20 || nextChar.charCodeAt(0) == 10 && splitText[1].charCodeAt(0) != 10) {
+                                                    val += newChar+"<br>⁣&#8291;";
+                                                    $("#content").html(val);
+                                                    splitText.shift();
+                                                    $("#page").css("margin-right", "auto");
+                                                    if(nextChar.charCodeAt(0) != 10)
+                                                        toShift = false;
+                                                    currentLine = "";
+                                                    break;
+                                                }
+                                            } else if (newChar == " ") {
+                                                $('#text').html(currentLine + newChar + newWord);
+                                                var width = $('#text').width();
+                                                // console.log($('#text').html() + " : " + width + " > " + $('#jack').width());
+                                                if (width >= $('#jack').width()-20) {
+                                                    val += newChar+"<br>&#8291;";
+                                                    $("#content").html(val);
+                                                    toShift = false;
+                                                    $("#page").css("margin-right", "auto");
+                                                    currentLine = "";
+                                                    break;
+                                                }
+                                            }
+                                            if(newChar.charCodeAt(0) == 10)
+                                                currentLine = "";
+                                            currentLine += newChar;
+                                            val += newChar;
+                                            if (splitText[0].charCodeAt(0) == 10 && splitText[1].charCodeAt(0)==10)
+                                                val+="<br>";
+
+                                            newChar = splitText.shift();
+                                            nextChar = splitText[0];
+                                        }
+                                        else if(splitText.length>0)
+                                        {
+                                            if (nextChar == " " ||  nextChar.charCodeAt(0) == 10) // Fin de mot
+                                            {
+                                                if (!(nextChar.charCodeAt(0) == 10  || newChar == " " && nextChar == " "))
+                                                    newWord = words.shift();
+                                                if (nextChar == " ")
+                                                    var width = $('#text').html(currentLine + " ").width();
+                                                else
+                                                    var width = $('#text').html(currentLine + newChar + newWord).width();
+
+                                                //console.log(width + " > " + $('#jack').width());
+
+
+                                                if (width >= $('#jack').width() || nextChar.charCodeAt(0) == 10) {
+                                                    val += newChar+"<br>";
+                                                    $("#content").html(val);
+                                                    splitText.shift();
+                                                    $("#page").css("margin-right", "auto");
+                                                    if(nextChar.charCodeAt(0) != 10)
+                                                        toShift = false;
+                                                    currentLine = "";
+                                                    break;
+                                                }
+                                            } else if (newChar == " ") {
+                                                var width = $('#text').html(currentLine + newChar + " " + newWord).width();
+
+                                                //console.log(width + " > " + $('#jack').width());
+                                                if (width >= $('#jack').width()) {
+                                                    val += newChar+"<br>";
+                                                    toShift = false;
+                                                    $("#page").css("margin-right", "auto");
+                                                    currentLine = "";
+                                                    break;
+                                                }
+                                            }
+                                            if(newChar.charCodeAt(0) == 10)
+                                                currentLine = "";
+                                            currentLine += newChar;
+                                            val += newChar;
+                                            if (splitText[0].charCodeAt(0) == 10 && splitText[1].charCodeAt(0)==10)
+                                                val+="<br>";
+
+                                            newChar = splitText.shift();
+                                            nextChar = splitText[0];
+                                        }
+                                    }
+                                    $("#content").html(val);
+                                    break;
+
+                                default:
+                                    var newChar, nextChar;
+
+                                    if(splitText.length>0)
+                                    {
+                                        if(splitText.length==1 && splitText[0].charCodeAt(0)==10)
+                                            break;
+                                        newChar = splitText.shift();
+                                        nextChar = splitText[0];
+                                        if (nextChar == " " || nextChar.charCodeAt(0) == 10) // Fin de mot
+                                        {
+                                            newWord = words.shift();
+                                            if (nextChar == " ")
+                                                var width = $('#text').html(currentLine + newChar + " ").width();
+                                            else
+                                                var width = $('#text').html(currentLine + newChar + " " + newWord).width();
+                                            //console.log(width + " > " + $('#jack').width());
+
+                                            if (width >= ($('#jack').width()-30) || nextChar.charCodeAt(0) == 10) {
+                                                $("#page").css("margin-right", parseInt($("#page").css("margin-right").substr(0, $("#page").css("margin-right").length-2))+vitesseDeplacementPage+"px");
+                                                val += newChar;
+                                                $("#content").html(val);
+                                                currentLine = "";
+                                                if(splitText.length>1)
+                                                {
+                                                    document.getElementById("signal").style.visibility = "visible";
+                                                    needEnter = true;
+                                                }
+                                                if(nextChar.charCodeAt(0) != 10)
+                                                    toShift = false;
+
+                                                break;
+                                            }
+                                        } else if (newChar == " ") { // Entre mots
+                                            var width = $('#text').html(currentLine + newChar + newWord).width();
+                                            //console.log(width + " > " + $('#jack').width());
+                                            if (width >= ($('#jack').width()-30)) {
+                                                val += newChar+"<br>";
+                                                $("#content").html(val);
+                                                $("#page").css("margin-right", parseInt($("#page").css("margin-right").substr(0, $("#page").css("margin-right").length-2))+vitesseDeplacementPage+"px");
+                                                currentLine = "";
+                                                if(splitText.length>1)
+                                                {
+                                                    document.getElementById("signal").style.visibility = "visible";
+                                                    needEnter = true;
+                                                }
+
+                                                toShift = false;
+
+                                                break;
+                                            }
+                                        }
+
+                                        if (newChar.charCodeAt(0) == 10)
+                                            currentLine = "";
+                                        currentLine += newChar;
+                                        val += newChar;
+                                        $("#content").html(val);
+                                        $("#page").css("margin-right", parseInt($("#page").css("margin-right").substr(0, $("#page").css("margin-right").length-2))+vitesseDeplacementPage+"px");
+                                        $("#fadeout").css("width", $("#page").css("width")); // La largeur du dégradé fading est celle de la page
+                                        $("#fadeout").css("height", $(window).height()/(100/pourcentageHauteurFadeout)+"px");
+                                    }
+                                    break;
+                            }
+                        }
+
+                        if(splitText.length<2 && !ended)
+                        {
+                            ended = true;
+                            console.log("refreshed");
+                            needWait = true;
+                            $("#content").animate({
+                                bottom: '100%',
+                            }, endSpeedAnimate, function(){
+                                $("#text").empty();
+                                $("#content").empty();
+                                $("#content").fadeIn();
+                                $("#page").css("margin-right", "auto");
+                                historic = "";
+                                needEnter = false;
+                                toShift = true;
+                                ended = false;
+                                currentLine = "";
+                                val = '';
+                                splitText = text.split("\r").join("").split('');
+                                words = text.split(/[\s]+/);
+                                newWord = words.shift();
+                                $("#content").css("bottom", "10%");
+                                needWait = false;
+                            });
+                            return;
+                        }
+                    }
+
+                });
+            }
+
+            $.get(url, {}, function(str) {
+                IamJack(str);
+            });
+            $("body").focus();
+            $("body").click();
+            $("body").trigger("tap"); //jQuery Mobile
+        }
+    </script>
+</body>
+
+</html>
